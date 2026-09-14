@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Súmula de Acompanhamento — Atletas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --black:#0c0c0c;
+    --panel:#161615;
+    --panel-2:#1e1e1c;
+    --line:#2c2b27;
+    --yellow:#f4c400;
+    --yellow-dim:#c79f00;
+    --white:#f6f4ec;
+    --muted:#98968b;
+    --red:#e2483c;
+    --green:#4f9f6e;
+    --blue:#5f8fd9;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--black);
+    color:var(--white);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.numlabel{font-family:'Oswald',sans-serif;}
+
+  /* ===== HEADER / SCOREBOARD ===== */
+  .scoreboard{
+    background:var(--black);
+    border-bottom:4px solid var(--yellow);
+    position:relative;
+    padding:22px 28px 18px;
+  }
+  .scoreboard::after{
+    content:"";
+    position:absolute; left:0; right:0; bottom:-8px; height:2px;
+    background:var(--yellow); opacity:.45;
+  }
+  .scoreboard-inner{
+    max-width:1180px; margin:0 auto;
+    display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap;
+  }
+  .brand{display:flex; align-items:center; gap:14px;}
+  .brand-mark{
+    width:44px;height:44px; border:3px solid var(--yellow); border-radius:6px;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Oswald',sans-serif; font-weight:700; color:var(--yellow); font-size:18px;
+    transform:rotate(-3deg);
+  }
+  .brand h1{
+    font-size:22px; margin:0; letter-spacing:.5px; text-transform:uppercase; color:var(--white);
+  }
+  .brand p{margin:2px 0 0; font-size:12.5px; color:var(--muted);}
+  .search-wrap{position:relative; width:320px; max-width:100%;}
+  .search-wrap input{
+    width:100%; background:var(--panel); border:1px solid var(--line); color:var(--white);
+    padding:11px 14px; border-radius:5px; font-size:14px; font-family:'Inter',sans-serif;
+  }
+  .search-wrap input:focus{outline:none; border-color:var(--yellow);}
+  .search-results{
+    position:absolute; top:calc(100% + 6px); left:0; right:0; background:var(--panel-2);
+    border:1px solid var(--line); border-radius:6px; max-height:280px; overflow-y:auto; z-index:40;
+    display:none; box-shadow:0 12px 30px rgba(0,0,0,.5);
+  }
+  .search-results.show{display:block;}
+  .search-item{padding:10px 14px; cursor:pointer; font-size:14px; display:flex; justify-content:space-between; gap:10px;}
+  .search-item:hover{background:var(--panel);}
+  .search-item span.b{color:var(--muted); font-size:11.5px; font-family:'Oswald',sans-serif; letter-spacing:.5px;}
+
+  /* ===== MAIN LAYOUT ===== */
+  main{max-width:1180px; margin:0 auto; padding:32px 28px 80px;}
+  .section-title{
+    display:flex; align-items:baseline; gap:10px; margin:0 0 16px;
+  }
+  .section-title h2{font-size:15px; letter-spacing:1.5px; text-transform:uppercase; color:var(--yellow); margin:0;}
+  .section-title .rule{flex:1; height:1px; background:var(--line);}
+
+  /* ===== BLOCK GRID ===== */
+  .grid{
+    display:grid; grid-template-columns:repeat(5,1fr); gap:12px;
+  }
+  @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr);}}
+  .block-card{
+    background:var(--panel); border:1px solid var(--line); border-radius:8px;
+    padding:16px 16px 14px; cursor:pointer; transition:border-color .15s, transform .1s;
+    position:relative; overflow:hidden;
+  }
+  .block-card:hover{border-color:var(--yellow-dim);}
+  .block-card.active{border-color:var(--yellow); background:var(--panel-2);}
+  .block-card .bn{
+    font-family:'Oswald',sans-serif; font-weight:600; color:var(--yellow); font-size:12.5px;
+    letter-spacing:1.5px; text-transform:uppercase;
+  }
+  .block-card .cnt{
+    display:block; font-size:26px; font-family:'Oswald',sans-serif; font-weight:600; margin-top:6px; color:var(--white);
+  }
+  .block-card .cnt small{font-size:12px; color:var(--muted); font-family:'Inter',sans-serif; font-weight:400;}
+
+  /* ===== ATHLETE PANEL (expanded block) ===== */
+  .athlete-panel{
+    margin-top:14px; background:var(--panel); border:1px solid var(--yellow-dim);
+    border-radius:8px; padding:18px 18px 8px; display:none;
+  }
+  .athlete-panel.show{display:block;}
+  .athlete-panel h3{margin:0 0 12px; font-size:14px; letter-spacing:1px; text-transform:uppercase; color:var(--white);}
+  .chips{display:flex; flex-wrap:wrap; gap:8px; padding-bottom:14px;}
+  .chip{
+    background:var(--panel-2); border:1px solid var(--line); color:var(--white);
+    padding:8px 13px; border-radius:20px; font-size:13.5px; cursor:pointer;
+    transition:background .15s,border-color .15s;
+  }
+  .chip:hover{border-color:var(--yellow); background:#242420;}
+  .chip.inactive{color:var(--muted); text-decoration:line-through; cursor:not-allowed; opacity:.55;}
+  .chip.inactive:hover{border-color:var(--line); background:var(--panel-2);}
+
+  /* ===== RECENT LOG ===== */
+  .log-list{display:flex; flex-direction:column; gap:8px;}
+  .log-item{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    background:var(--panel); border:1px solid var(--line); border-radius:7px; padding:12px 16px;
+    cursor:pointer;
+  }
+  .log-item:hover{border-color:var(--yellow-dim);}
+  .log-left{display:flex; align-items:center; gap:12px;}
+  .log-dot{width:8px;height:8px;border-radius:50%;background:var(--yellow);flex-shrink:0;}
+  .log-name{font-weight:600; font-size:14.5px;}
+  .log-meta{font-size:12px; color:var(--muted);}
+  .empty-note{color:var(--muted); font-size:13.5px; font-style:italic;}
+
+  /* ===== MODAL ===== */
+  .overlay{
+    position:fixed; inset:0; background:rgba(0,0,0,.72); display:none;
+    align-items:flex-start; justify-content:center; z-index:100; padding:26px 16px; overflow-y:auto;
+  }
+  .overlay.show{display:flex;}
+  .modal{
+    background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    width:100%; max-width:760px; margin:auto; overflow:hidden;
+  }
+  .modal-head{
+    background:var(--yellow); color:#141400; padding:18px 24px; display:flex; justify-content:space-between; align-items:flex-start; gap:16px;
+  }
+  .modal-head h2{margin:0; font-size:21px; text-transform:uppercase; letter-spacing:.5px;}
+  .modal-head .sub{font-size:12.5px; font-weight:600; opacity:.75; margin-top:2px; font-family:'Inter',sans-serif;}
+  .modal-head button.close{
+    background:none; border:none; color:#141400; font-size:22px; cursor:pointer; line-height:1; padding:2px;
+  }
+  .modal-body{padding:22px 24px 8px; max-height:70vh; overflow-y:auto;}
+  .field-row{margin-bottom:6px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .field-row label{font-size:13px; color:var(--muted); min-width:120px;}
+  .field-row input[type=date],.field-row input[type=text]{
+    background:var(--panel-2); border:1px solid var(--line); color:var(--white);
+    padding:8px 10px; border-radius:5px; font-size:14px; font-family:'Inter',sans-serif;
+  }
+
+  .step{margin-bottom:22px; padding-bottom:18px; border-bottom:1px solid var(--line);}
+  .step:last-child{border-bottom:none;}
+  .step-head{display:flex; align-items:center; gap:10px; margin-bottom:12px;}
+  .step-num{
+    width:24px;height:24px; border-radius:5px; background:var(--yellow); color:#141400;
+    display:flex; align-items:center; justify-content:center; font-family:'Oswald',sans-serif; font-weight:700; font-size:13px; flex-shrink:0;
+  }
+  .step-head h3{margin:0; font-size:14.5px; text-transform:uppercase; letter-spacing:.7px; color:var(--white);}
+  .sub-field{margin-bottom:12px;}
+  .sub-field label{display:block; font-size:12.5px; color:var(--muted); margin-bottom:5px;}
+  .sub-field textarea, .sub-field input[type=text]{
+    width:100%; background:var(--panel-2); border:1px solid var(--line); color:var(--white);
+    padding:10px 12px; border-radius:6px; font-size:14px; font-family:'Inter',sans-serif; resize:vertical;
+  }
+  .sub-field textarea:focus, .sub-field input:focus{outline:none; border-color:var(--yellow);}
+  .sub-field textarea{min-height:52px;}
+
+  .delivery-row{display:flex; gap:8px; margin-bottom:8px; align-items:center;}
+  .delivery-row input[type=text]{flex:1;}
+  .delivery-row select{
+    background:var(--panel-2); border:1px solid var(--line); color:var(--white);
+    padding:9px 8px; border-radius:6px; font-size:13px; font-family:'Inter',sans-serif;
+  }
+  .delivery-row .rm{
+    background:none; border:none; color:var(--muted); cursor:pointer; font-size:17px; padding:4px 6px;
+  }
+  .delivery-row .rm:hover{color:var(--red);}
+  .add-btn{
+    background:none; border:1px dashed var(--line); color:var(--muted); padding:8px 12px;
+    border-radius:6px; font-size:13px; cursor:pointer; font-family:'Inter',sans-serif;
+  }
+  .add-btn:hover{border-color:var(--yellow); color:var(--yellow);}
+
+  .alert-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:8px 16px; margin-bottom:14px;}
+  @media(max-width:560px){.alert-grid{grid-template-columns:1fr;}}
+  .alert-check{display:flex; align-items:center; gap:9px; font-size:13.5px; cursor:pointer;}
+  .alert-check input{accent-color:var(--yellow); width:16px; height:16px; cursor:pointer;}
+
+  .modal-foot{
+    padding:16px 24px 20px; display:flex; justify-content:flex-end; gap:10px; border-top:1px solid var(--line);
+  }
+  .btn{
+    padding:11px 20px; border-radius:6px; font-size:14px; font-weight:600; cursor:pointer;
+    border:1px solid var(--line); background:none; color:var(--white); font-family:'Inter',sans-serif;
+  }
+  .btn:hover{border-color:var(--muted);}
+  .btn-primary{background:var(--yellow); border-color:var(--yellow); color:#141400;}
+  .btn-primary:hover{background:var(--yellow-dim); border-color:var(--yellow-dim);}
+  .history-link{font-size:12.5px; color:var(--yellow); cursor:pointer; text-decoration:underline; margin-left:6px;}
+
+  /* ===== REPORT VIEW ===== */
+  .report-doc{background:var(--white); color:#161513; border-radius:8px; overflow:hidden;}
+  .report-top{
+    background:var(--black); color:var(--white); padding:20px 26px; display:flex; justify-content:space-between; align-items:center; border-bottom:5px solid var(--yellow);
+  }
+  .report-top .tag{font-family:'Oswald',sans-serif; letter-spacing:1.5px; font-size:11px; color:var(--yellow); text-transform:uppercase;}
+  .report-top h2{margin:4px 0 0; font-size:22px; text-transform:uppercase;}
+  .report-top .date{font-size:13px; color:var(--muted); text-align:right;}
+  .report-body{padding:26px 30px 12px;}
+  .r-block{margin-bottom:20px;}
+  .r-block h4{
+    font-family:'Oswald',sans-serif; font-size:13px; text-transform:uppercase; letter-spacing:1px;
+    color:#8a6e00; border-bottom:2px solid #f4c400; padding-bottom:6px; margin:0 0 10px;
+  }
+  .r-line{margin:0 0 8px; font-size:14px; line-height:1.5;}
+  .r-line b{display:block; font-size:11.5px; text-transform:uppercase; letter-spacing:.4px; color:#6b6a63; margin-bottom:2px;}
+  .r-tag{
+    display:inline-block; font-size:11.5px; padding:2px 9px; border-radius:10px; margin-left:8px; font-weight:600;
+    background:#eee; color:#555;
+  }
+  .r-delivery{display:flex; justify-content:space-between; gap:10px; padding:7px 0; border-bottom:1px dashed #e2e0d6; font-size:14px;}
+  .r-alerts{display:flex; flex-wrap:wrap; gap:8px;}
+  .r-alert-pill{background:#fdecea; color:#b23127; border:1px solid #f3c8c4; font-size:12.5px; padding:4px 11px; border-radius:14px;}
+  .r-empty{color:#a8a69b; font-style:italic; font-size:13.5px;}
+  .report-foot{padding:16px 24px 22px; display:flex; justify-content:flex-end; gap:10px; border-top:1px solid var(--line);}
+
+  @media print{
+    body *{visibility:hidden;}
+    .report-doc, .report-doc *{visibility:visible;}
+    .report-doc{position:absolute; top:0; left:0; width:100%; border-radius:0;}
+    .report-foot{display:none;}
+  }
+
+  ::-webkit-scrollbar{width:9px;}
+  ::-webkit-scrollbar-thumb{background:var(--line); border-radius:5px;}
+</style>
+</head>
+<body>
+
+  <header class="scoreboard">
+    <div class="scoreboard-inner">
+      <div class="brand">
+        <div class="brand-mark">AC</div>
+        <div>
+          <h1>Súmula de Acompanhamento</h1>
+          <p>Registro semanal de reunião por atleta — 10 blocos</p>
+        </div>
+      </div>
+      <div class="search-wrap">
+        <input type="text" id="searchInput" placeholder="Buscar atleta pelo nome...">
+        <div class="search-results" id="searchResults"></div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="section-title"><h2>Blocos</h2><div class="rule"></div></div>
+    <div class="grid" id="blockGrid"></div>
+    <div class="athlete-panel" id="athletePanel">
+      <h3 id="athletePanelTitle"></h3>
+      <div class="chips" id="athleteChips"></div>
+    </div>
+
+    <div class="section-title" style="margin-top:40px;"><h2>Últimos registros</h2><div class="rule"></div></div>
+    <div class="log-list" id="logList"></div>
+  </main>
+
+  <!-- FORM MODAL -->
+  <div class="overlay" id="formOverlay">
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <h2 id="formAthleteName"></h2>
+          <div class="sub" id="formAthleteBlock"></div>
+        </div>
+        <button class="close" onclick="closeForm()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="field-row">
+          <label>Data da reunião</label>
+          <input type="date" id="meetingDate">
+          <span class="history-link" id="historyLink" onclick="openHistory()">ver histórico deste atleta</span>
+        </div>
+
+        <div class="step">
+          <div class="step-head"><div class="step-num">1</div><h3>Cenário da semana</h3></div>
+          <div class="sub-field"><label>a. Próximo compromisso (jogo, evento ou marco importante)</label><input type="text" id="f_compromisso"></div>
+          <div class="sub-field"><label>b. Oportunidades identificadas (relacionamento, pauta, conteúdo para redes)</label><textarea id="f_oportunidades"></textarea></div>
+          <div class="sub-field"><label>c. Estratégias definidas</label><textarea id="f_estrategias"></textarea></div>
+        </div>
+
+        <div class="step">
+          <div class="step-head"><div class="step-num">2</div><h3>Pendências</h3></div>
+          <div class="sub-field"><label>Prioridade alta (esta semana)</label><textarea id="f_prio_alta"></textarea></div>
+          <div class="sub-field"><label>Prioridade média</label><textarea id="f_prio_media"></textarea></div>
+          <div class="sub-field"><label>Oportunidades futuras (fora do radar imediato)</label><textarea id="f_prio_futura"></textarea></div>
+        </div>
+
+        <div class="step">
+          <div class="step-head"><div class="step-num">3</div><h3>Andamento das entregas</h3></div>
+          <div id="deliveriesWrap"></div>
+          <button class="add-btn" onclick="addDeliveryRow()">+ adicionar entrega</button>
+        </div>
+
+        <div class="step">
+          <div class="step-head"><div class="step-num">4</div><h3>Alertas</h3></div>
+          <div class="alert-grid" id="alertGrid"></div>
+          <div class="sub-field"><label>Outras observações</label><input type="text" id="f_alerta_outro"></div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" onclick="closeForm()">Cancelar</button>
+        <button class="btn btn-primary" onclick="finalizeReport()">Finalizar e emitir relatório</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- REPORT MODAL -->
+  <div class="overlay" id="reportOverlay">
+    <div class="modal" style="max-width:640px;">
+      <div class="report-doc" id="reportDoc"></div>
+      <div class="report-foot">
+        <button class="btn" onclick="closeReport()">Fechar</button>
+        <button class="btn btn-primary" onclick="window.print()">Imprimir / salvar PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY MODAL -->
+  <div class="overlay" id="historyOverlay">
+    <div class="modal" style="max-width:600px;">
+      <div class="modal-head">
+        <div><h2 id="historyTitle" style="font-size:18px;"></h2></div>
+        <button class="close" onclick="closeHistory()">&times;</button>
+      </div>
+      <div class="modal-body" id="historyBody" style="padding-top:18px;"></div>
+      <div class="modal-foot"><button class="btn" onclick="closeHistory()">Fechar</button></div>
+    </div>
+  </div>
+
+<script>
+const DATA = {
+ 1:["Léo Scienza","Bia Menezes","Lucão","David Nogueira","Wanderley Pereira","Garbin Sports","João Zatsuga","Edilândia Araújo","Rodrigo Weber","Renato de Melo"],
+ 2:["Alemão","Ketlen Wiggers","Pito","Arthur do Vale","Lucas Prado","BR Esportes","Fabrício Valim","Evair Moreira","Wesley Fernandes","Twelve Sports"],
+ 3:["Weslley Patati","Letícia Santos|i","Matheus Rodrigues","Joãozinho","João Pelegrini|i","Único Sports","Henrique Barbieri","Gabriel Serafim","Luciano Júnior","Marcelo Pap"],
+ 4:["Lucas Barbosa","Mônica Hickmann","Irene Samper","João Pedro Abreu","Tayana Medeiros","FS7 Sports","Ratinho","Marco Túlio","Marcel Duarte","Marcinho Guerreiro|i"],
+ 5:["Gabriel Pirani","Natascha Honegger","Bateria","Kauã Miranda","Pressing Sports","AoJ","Kaue Martins","Duda Abreu","Bruno Moraes","Eduardo Silva"],
+ 6:["Rafael Ratão","Bia Silva","Maringá SAF","Bernardo Germano","Maurício Chiodin","Seven Sports","Willian Dorn","Giovana Iseppe","Ramon Menezes","Lucca Rodrigues"],
+ 7:["Vinicius Zanocelo","Ana Eliza","Marcelo Moreno","Eduardo Marchi","AIX4Soccer","Bruno Mazzotti","Henrique Gelain","Rafael Marchi","Thiago Dantas","Isaac Miranda"],
+ 8:["Rwan Cruz","Guilherme Siqueira","Celso Júnior","Felipe Rafael","Arivan Gomes","Gabriel Amaral","Helder Maciel","Erick Pereira","Full"],
+ 9:["Luis Mandaca","Walace","Thiago Kosloski","Fred Vasconcelos","Lucas da Silva","Willians Alves","Rafael Bilu","Tomás Pitrez","César Martins"],
+ 10:["Diogo Oliveira","Matheus Moraes","Douglas Bacelar","Caué Santos","Pedrinho Gabriel","Matheus Cadorini","Gabriel Vareta","Matheus Matueda","Neilton"]
+};
+
+const ALERT_OPTIONS = ["Lesão","Mudança de clube","Período sem jogos","Possíveis crises","Renovação","Convocação","Nascimento de filho","Aniversário"];
+const STATUS_OPTIONS = ["Iniciada","Enviada","Em aprovação","Em edição","Agendada","Aguardando retorno","Concluída"];
+
+function slug(s){
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+}
+
+let currentBlock = null, currentAthlete = null;
+
+// ---------- BUILD HOME GRID ----------
+function buildGrid(){
+  const grid = document.getElementById('blockGrid');
+  grid.innerHTML = '';
+  Object.keys(DATA).forEach(b=>{
+    const active = DATA[b].filter(a=>!a.endsWith('|i')).length;
+    const card = document.createElement('div');
+    card.className = 'block-card';
+    card.id = 'card-'+b;
+    card.onclick = ()=>toggleBlock(b);
+    card.innerHTML = `<div class="bn">Bloco ${b}</div><span class="cnt">${DATA[b].length}<small> atletas · ${active} ativos</small></span>`;
+    grid.appendChild(card);
+  });
+}
+
+function toggleBlock(b){
+  const panel = document.getElementById('athletePanel');
+  if(currentBlock === b && panel.classList.contains('show')){
+    panel.classList.remove('show');
+    currentBlock = null;
+    document.querySelectorAll('.block-card').forEach(c=>c.classList.remove('active'));
+    return;
+  }
+  currentBlock = b;
+  document.querySelectorAll('.block-card').forEach(c=>c.classList.remove('active'));
+  document.getElementById('card-'+b).classList.add('active');
+  document.getElementById('athletePanelTitle').textContent = 'Bloco '+b+' — selecione um atleta';
+  const chips = document.getElementById('athleteChips');
+  chips.innerHTML = '';
+  DATA[b].forEach(raw=>{
+    const inactive = raw.endsWith('|i');
+    const name = raw.replace('|i','');
+    const chip = document.createElement('div');
+    chip.className = 'chip'+(inactive?' inactive':'');
+    chip.textContent = name + (inactive?' (inativo)':'');
+    if(!inactive) chip.onclick = ()=>openForm(b,name);
+    chips.appendChild(chip);
+  });
+  panel.classList.add('show');
+}
+
+// ---------- SEARCH ----------
+document.getElementById('searchInput').addEventListener('input', e=>{
+  const q = e.target.value.trim().toLowerCase();
+  const box = document.getElementById('searchResults');
+  if(!q){ box.classList.remove('show'); box.innerHTML=''; return; }
+  let matches = [];
+  Object.keys(DATA).forEach(b=>{
+    DATA[b].forEach(raw=>{
+      const inactive = raw.endsWith('|i');
+      const name = raw.replace('|i','');
+      if(!inactive && name.toLowerCase().includes(q)) matches.push({b,name});
+    });
+  });
+  matches = matches.slice(0,8);
+  box.innerHTML = matches.map(m=>`<div class="search-item" data-b="${m.b}" data-n="${m.name.replace(/"/g,'&quot;')}"><span>${m.name}</span><span class="b">BLOCO ${m.b}</span></div>`).join('') || '<div class="search-item" style="color:var(--muted);cursor:default;">Nenhum atleta encontrado</div>';
+  box.classList.add('show');
+  box.querySelectorAll('.search-item[data-b]').forEach(el=>{
+    el.onclick = ()=>{ openForm(el.dataset.b, el.dataset.n); box.classList.remove('show'); e.target.value=''; };
+  });
+});
+document.addEventListener('click', e=>{
+  if(!e.target.closest('.search-wrap')) document.getElementById('searchResults').classList.remove('show');
+});
+
+// ---------- FORM ----------
+function addDeliveryRow(desc, status){
+  const wrap = document.getElementById('deliveriesWrap');
+  const row = document.createElement('div');
+  row.className = 'delivery-row';
+  row.innerHTML = `<input type="text" placeholder="Ex.: Arte do jogo contra o Júbilo" value="${desc?desc.replace(/"/g,'&quot;'):''}">
+    <select>${STATUS_OPTIONS.map(o=>`<option ${o===status?'selected':''}>${o}</option>`).join('')}</select>
+    <button class="rm" onclick="this.parentElement.remove()">&times;</button>`;
+  wrap.appendChild(row);
+}
+
+function buildAlertGrid(){
+  const grid = document.getElementById('alertGrid');
+  grid.innerHTML = ALERT_OPTIONS.map((a,i)=>`<label class="alert-check"><input type="checkbox" value="${a}" id="al_${i}"> ${a}</label>`).join('');
+}
+
+function openForm(b, name){
+  currentBlock = b; currentAthlete = name;
+  document.getElementById('formAthleteName').textContent = name;
+  document.getElementById('formAthleteBlock').textContent = 'Bloco '+b;
+  document.getElementById('meetingDate').value = new Date().toISOString().slice(0,10);
+  ['f_compromisso','f_oportunidades','f_estrategias','f_prio_alta','f_prio_media','f_prio_futura','f_alerta_outro'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('deliveriesWrap').innerHTML='';
+  addDeliveryRow();
+  buildAlertGrid();
+  document.getElementById('formOverlay').classList.add('show');
+}
+function closeForm(){ document.getElementById('formOverlay').classList.remove('show'); }
+
+async function finalizeReport(){
+  const deliveries = Array.from(document.querySelectorAll('#deliveriesWrap .delivery-row')).map(r=>{
+    const inputs = r.querySelectorAll('input,select');
+    return { desc: inputs[0].value.trim(), status: inputs[1].value };
+  }).filter(d=>d.desc);
+
+  const alerts = ALERT_OPTIONS.filter((a,i)=>document.getElementById('al_'+i).checked);
+  const outro = document.getElementById('f_alerta_outro').value.trim();
+
+  const report = {
+    id: Date.now(),
+    block: currentBlock,
+    athlete: currentAthlete,
+    date: document.getElementById('meetingDate').value,
+    compromisso: document.getElementById('f_compromisso').value.trim(),
+    oportunidades: document.getElementById('f_oportunidades').value.trim(),
+    estrategias: document.getElementById('f_estrategias').value.trim(),
+    prio_alta: document.getElementById('f_prio_alta').value.trim(),
+    prio_media: document.getElementById('f_prio_media').value.trim(),
+    prio_futura: document.getElementById('f_prio_futura').value.trim(),
+    deliveries, alerts, outro
+  };
+
+  await saveReport(report);
+  closeForm();
+  renderReport(report);
+  document.getElementById('reportOverlay').classList.add('show');
+  buildGrid();
+  loadLog();
+}
+
+// ---------- STORAGE ----------
+async function saveReport(report){
+  const key = 'meeting-'+slug(report.athlete);
+  let list = [];
+  try{
+    const res = await window.storage.get(key, false);
+    if(res && res.value) list = JSON.parse(res.value);
+  }catch(e){ list = []; }
+  list.unshift(report);
+  try{ await window.storage.set(key, JSON.stringify(list), false); }catch(e){ console.error('storage set failed', e); }
+
+  let log = [];
+  try{
+    const res2 = await window.storage.get('meeting-log', false);
+    if(res2 && res2.value) log = JSON.parse(res2.value);
+  }catch(e){ log = []; }
+  log.unshift({id:report.id, athlete:report.athlete, block:report.block, date:report.date});
+  log = log.slice(0,40);
+  try{ await window.storage.set('meeting-log', JSON.stringify(log), false); }catch(e){ console.error('log save failed', e); }
+}
+
+async function loadLog(){
+  const el = document.getElementById('logList');
+  let log = [];
+  try{
+    const res = await window.storage.get('meeting-log', false);
+    if(res && res.value) log = JSON.parse(res.value);
+  }catch(e){ log = []; }
+  if(!log.length){ el.innerHTML = '<div class="empty-note">Nenhum registro finalizado ainda. Os relatórios emitidos aparecerão aqui.</div>'; return; }
+  el.innerHTML = log.slice(0,8).map(l=>`
+    <div class="log-item" data-athlete="${l.athlete.replace(/"/g,'&quot;')}" data-id="${l.id}">
+      <div class="log-left"><div class="log-dot"></div><div><div class="log-name">${l.athlete}</div><div class="log-meta">Bloco ${l.block} · ${formatDate(l.date)}</div></div></div>
+      <span style="color:var(--muted);font-size:12px;">ver relatório →</span>
+    </div>`).join('');
+  el.querySelectorAll('.log-item').forEach(item=>{
+    item.onclick = async ()=>{
+      const key = 'meeting-'+slug(item.dataset.athlete);
+      try{
+        const res = await window.storage.get(key, false);
+        const list = res && res.value ? JSON.parse(res.value) : [];
+        const rep = list.find(r=>String(r.id)===item.dataset.id);
+        if(rep){ renderReport(rep); document.getElementById('reportOverlay').classList.add('show'); }
+      }catch(e){ console.error(e); }
+    };
+  });
+}
+
+function formatDate(d){
+  if(!d) return '—';
+  const [y,m,day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
+
+// ---------- REPORT RENDER ----------
+function renderReport(r){
+  const doc = document.getElementById('reportDoc');
+  const line = (label, val) => val ? `<p class="r-line"><b>${label}</b>${escapeHtml(val)}</p>` : `<p class="r-line"><b>${label}</b><span class="r-empty">não registrado</span></p>`;
+  const deliveriesHtml = r.deliveries && r.deliveries.length
+    ? r.deliveries.map(d=>`<div class="r-delivery"><span>${escapeHtml(d.desc)}</span><span class="r-tag" style="background:${statusColor(d.status)}22;color:${statusColor(d.status)}">${d.status}</span></div>`).join('')
+    : '<p class="r-empty">Nenhuma entrega em andamento registrada.</p>';
+  const alertsHtml = (r.alerts && r.alerts.length) || r.outro
+    ? `<div class="r-alerts">${(r.alerts||[]).map(a=>`<span class="r-alert-pill">${a}</span>`).join('')}${r.outro?`<span class="r-alert-pill">${escapeHtml(r.outro)}</span>`:''}</div>`
+    : '<p class="r-empty">Nenhum alerta nesta semana.</p>';
+
+  doc.innerHTML = `
+    <div class="report-top">
+      <div><div class="tag">Bloco ${r.block} · Súmula de acompanhamento</div><h2>${escapeHtml(r.athlete)}</h2></div>
+      <div class="date">Reunião de<br><strong>${formatDate(r.date)}</strong></div>
+    </div>
+    <div class="report-body">
+      <div class="r-block"><h4>1. Cenário da semana</h4>
+        ${line('Próximo compromisso', r.compromisso)}
+        ${line('Oportunidades identificadas', r.oportunidades)}
+        ${line('Estratégias definidas', r.estrategias)}
+      </div>
+      <div class="r-block"><h4>2. Pendências</h4>
+        ${line('Prioridade alta (esta semana)', r.prio_alta)}
+        ${line('Prioridade média', r.prio_media)}
+        ${line('Oportunidades futuras', r.prio_futura)}
+      </div>
+      <div class="r-block"><h4>3. Andamento das entregas</h4>${deliveriesHtml}</div>
+      <div class="r-block"><h4>4. Alertas</h4>${alertsHtml}</div>
+    </div>`;
+}
+function statusColor(s){
+  return {'Concluída':'#2e8b57','Em aprovação':'#c98a00','Enviada':'#5f8fd9','Em edição':'#9b59b6','Agendada':'#5f8fd9','Iniciada':'#c98a00','Aguardando retorno':'#e2483c'}[s] || '#777';
+}
+function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+function closeReport(){ document.getElementById('reportOverlay').classList.remove('show'); }
+
+// ---------- HISTORY ----------
+async function openHistory(){
+  if(!currentAthlete) return;
+  const key = 'meeting-'+slug(currentAthlete);
+  document.getElementById('historyTitle').textContent = 'Histórico — ' + currentAthlete;
+  const body = document.getElementById('historyBody');
+  body.innerHTML = '<p class="empty-note">Carregando...</p>';
+  document.getElementById('historyOverlay').classList.add('show');
+  let list = [];
+  try{
+    const res = await window.storage.get(key, false);
+    if(res && res.value) list = JSON.parse(res.value);
+  }catch(e){ list = []; }
+  if(!list.length){ body.innerHTML = '<p class="empty-note">Nenhuma reunião anterior registrada para este atleta.</p>'; return; }
+  body.innerHTML = list.map(r=>`
+    <div class="log-item" style="margin-bottom:8px;" data-id="${r.id}">
+      <div class="log-left"><div class="log-dot"></div><div><div class="log-name">${formatDate(r.date)}</div><div class="log-meta">${r.deliveries?r.deliveries.length:0} entrega(s) · ${r.alerts?r.alerts.length:0} alerta(s)</div></div></div>
+      <span style="color:var(--muted);font-size:12px;">abrir →</span>
+    </div>`).join('');
+  body.querySelectorAll('.log-item').forEach(item=>{
+    item.onclick = ()=>{
+      const rep = list.find(r=>String(r.id)===item.dataset.id);
+      if(rep){ closeHistory(); renderReport(rep); document.getElementById('reportOverlay').classList.add('show'); }
+    };
+  });
+}
+function closeHistory(){ document.getElementById('historyOverlay').classList.remove('show'); }
+
+// ---------- INIT ----------
+buildGrid();
+loadLog();
+</script>
+</body>
+</html>
