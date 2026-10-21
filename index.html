@@ -85,12 +85,13 @@ button.del{color:var(--bad);border-color:var(--bad)}
 <script>
 // ====== CONFIGURAÇÃO DO BANCO (Supabase) ======
 var SUPABASE_URL="https://jwhrbtnsnlvscoiswpyd.supabase.co/rest/v1/";
-var SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3aHJidG5zbmx2c2NvaXN3cHlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2MDM0MzksImV4cCI6MjEwODE3OTQzOX0.wE-TVepKgqAfMIghil1Tqgdxo6dRBNKCVr2kS_xgCjo";  
+var SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3aHJidG5zbmx2c2NvaXN3cHlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2MDM0MzksImV4cCI6MjEwODE3OTQzOX0.wE-TVepKgqAfMIghil1Tqgdxo6dRBNKCVr2kS_xgCjo";
 // ===============================================
 var KEY="atletas-prazo-v1", list=[], editId=null, photo="";
+SUPABASE_URL=SUPABASE_URL.trim().replace(/\/+$/,"").replace(/\/rest\/v1$/,"");SUPABASE_KEY=SUPABASE_KEY.trim();
 var REMOTE=!!(SUPABASE_URL&&SUPABASE_KEY), API=SUPABASE_URL+"/rest/v1/atletas";
 var view="cards";try{view=localStorage.getItem("atletas-view")||"cards"}catch(e){}
-function H(x){var h={apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":"application/json"};for(var k in x)h[k]=x[k];return h}
+function H(x){var h={apikey:SUPABASE_KEY,"Content-Type":"application/json"};if(SUPABASE_KEY.indexOf("eyJ")===0)h.Authorization="Bearer "+SUPABASE_KEY;for(var k in x)h[k]=x[k];return h}
 function setStatus(m,err){var el=document.getElementById("status");el.hidden=!m;el.textContent=m||"";el.className="status"+(err?" err":"")}
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(list))}catch(e){alert("Não foi possível salvar neste navegador.")}}
 async function load(){
@@ -98,11 +99,11 @@ async function load(){
     setStatus("Modo local: os dados ficam só neste navegador. Configure o Supabase no topo do script para compartilhar com todos.");render();return}
   try{
     var r=await fetch(API+"?select=*&order=start_date.asc",{headers:H()});
-    if(!r.ok)throw new Error("http "+r.status);
+    if(!r.ok){var t="";try{t=await r.text()}catch(e2){}throw new Error("HTTP "+r.status+" - "+t.slice(0,200))}
     var rows=await r.json();
     list=rows.map(function(x){return{id:String(x.id),name:x.name,start:x.start_date,photo:x.photo||""}});
     setStatus("");
-  }catch(e){setStatus("Não foi possível conectar ao banco de dados. Verifique a URL, a chave e a tabela.",true)}
+  }catch(e){setStatus("Não foi possível conectar ao banco. Detalhe: "+(e.message||e),true)}
   render();
 }
 async function saveAthlete(a,isNew){
