@@ -64,7 +64,7 @@ button.del{color:var(--bad);border-color:var(--bad)}
 <body>
 <div class="wrap">
   <header>
-    <div><h1>Prazo dos Atletas</h1><div class="sub">Contrato de 3 meses a partir da primeira publicação</div></div>
+    <div><h1>Prazo dos Atletas</h1><div class="sub">Prazo de 90 dias a partir da primeira publicação</div></div>
     <div class="views"><button class="vb" id="vc">Cards</button><button class="vb" id="vt">Tabela</button><button id="add">+ Novo atleta</button></div>
   </header>
   <div class="status" id="status" hidden></div>
@@ -124,11 +124,12 @@ async function removeAthlete(id){
 }
 function parse(s){var p=s.split("-");return new Date(+p[0],+p[1]-1,+p[2])}
 function iso(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function addDays(s,n){var d=parse(s);d.setDate(d.getDate()+n);return d}
 function addMonths(s,n){var d=parse(s),day=d.getDate();d.setMonth(d.getMonth()+n);if(d.getDate()!==day)d.setDate(0);return d}
 function fmt(d){return d.toLocaleDateString("pt-BR")}
 function info(a){
   var today=new Date();today.setHours(0,0,0,0);
-  var s=parse(a.start),e=addMonths(a.start,3);
+  var s=parse(a.start),e=addDays(a.start,90);
   var left=Math.round((e-today)/864e5),total=Math.round((e-s)/864e5);
   var pct=Math.max(0,Math.min(100,(total-left)/total*100));
   var lvl=left<=15?"bad":left<=30?"warn":"ok";
@@ -170,7 +171,7 @@ function resize(file,cb){
 }
 var dlg=document.getElementById("dlg"),$=function(i){return document.getElementById(i)};
 function setPrev(){$("prev").innerHTML=photo?'<img class="avatar" style="width:64px;height:64px" src="'+photo+'" alt="">':"?"}
-function updEnd(){var v=$("start").value;$("endinfo").textContent=v?"Término automático: "+fmt(addMonths(v,3)):""}
+function updEnd(){var v=$("start").value;$("endinfo").textContent=v?"Término automático: "+fmt(addDays(v,90)):""}
 function openDlg(a){editId=a?a.id:null;photo=a?a.photo:"";$("dtitle").textContent=a?"Editar atleta":"Novo atleta";
   $("name").value=a?a.name:"";$("start").value=a?a.start:iso(new Date());$("file").value="";setPrev();updEnd();dlg.showModal()}
 function edit(id){openDlg(list.filter(function(a){return a.id===id})[0])}
@@ -190,6 +191,7 @@ function setView(v){view=v;try{localStorage.setItem("atletas-view",v)}catch(e){}
 $("vc").onclick=function(){setView("cards")};
 $("vt").onclick=function(){setView("table")};
 load();
+setInterval(function(){if(!dlg.open)render()},60000);
 if(REMOTE)setInterval(function(){if(!dlg.open)load()},30000);
 </script>
 </body>
